@@ -1,5 +1,7 @@
 import { registeredTools } from "@/lib/tools";
 
+export const dynamic = "force-dynamic";
+
 export default async function ToolsPage() {
   const tools = await registeredTools();
 

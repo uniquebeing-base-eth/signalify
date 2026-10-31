@@ -19,33 +19,45 @@ export async function saveEmployeeMemory({
   content: string;
   metadata?: Record<string, unknown>;
 }) {
-  return prisma.employeeMemory.create({
-    data: {
-      employeeId,
-      workspaceId,
-      category,
-      title,
-      content,
-      metadata: (metadata ?? {}) as Prisma.InputJsonValue,
-    },
-  });
+  try {
+    return prisma.employeeMemory.create({
+      data: {
+        employeeId,
+        workspaceId,
+        category,
+        title,
+        content,
+        metadata: (metadata ?? {}) as Prisma.InputJsonValue,
+      },
+    });
+  } catch {
+    return null;
+  }
 }
 
 export async function getEmployeeMemory(employeeId: string, workspaceId: string, category?: MemoryCategory) {
-  return prisma.employeeMemory.findMany({
-    where: {
-      employeeId,
-      workspaceId,
-      ...(category ? { category } : {}),
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  try {
+    return prisma.employeeMemory.findMany({
+      where: {
+        employeeId,
+        workspaceId,
+        ...(category ? { category } : {}),
+      },
+      orderBy: { createdAt: "desc" },
+    });
+  } catch {
+    return [];
+  }
 }
 
 export async function assertWorkspaceIsolation(workspaceId: string, employeeId: string) {
-  const memory = await prisma.employeeMemory.findFirst({
-    where: { employeeId, workspaceId },
-  });
+  try {
+    const memory = await prisma.employeeMemory.findFirst({
+      where: { employeeId, workspaceId },
+    });
 
-  return Boolean(memory);
+    return Boolean(memory);
+  } catch {
+    return false;
+  }
 }

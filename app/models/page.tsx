@@ -1,6 +1,8 @@
 import { getModelCatalog } from "@/lib/data";
 import ModelPanel from "@/components/model-panel";
 
+export const dynamic = "force-dynamic";
+
 export default async function ModelsPage() {
   const catalog = await getModelCatalog();
 

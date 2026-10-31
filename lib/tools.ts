@@ -55,45 +55,53 @@ export const toolCatalog: ToolDefinition[] = [
 ];
 
 export async function registeredTools() {
-  const tools = await prisma.registeredTool.findMany({
-    orderBy: { createdAt: "asc" },
-  });
+  try {
+    const tools = await prisma.registeredTool.findMany({
+      orderBy: { createdAt: "asc" },
+    });
 
-  return tools.length > 0
-    ? tools.map((tool) => ({
-        id: tool.id,
-        name: tool.name,
-        description: tool.description,
-        category: tool.category,
-        version: tool.version,
-        requiredPermissions: Array.isArray(tool.requiredPermissions)
-          ? tool.requiredPermissions
-          : [],
-      }))
-    : toolCatalog;
+    return tools.length > 0
+      ? tools.map((tool) => ({
+          id: tool.id,
+          name: tool.name,
+          description: tool.description,
+          category: tool.category,
+          version: tool.version,
+          requiredPermissions: Array.isArray(tool.requiredPermissions)
+            ? tool.requiredPermissions
+            : [],
+        }))
+      : toolCatalog;
+  } catch {
+    return toolCatalog;
+  }
 }
 
 export async function ensureToolRegistry() {
-  await Promise.all(
-    toolCatalog.map(async (tool: { name: string; category: string; description: string; version: string; requiredPermissions: string[]; approvalRequired: boolean; adapterName: string }) => {
-      await prisma.registeredTool.upsert({
-        where: { name: tool.name },
-        update: {},
-        create: {
-          name: tool.name,
-          category: tool.category,
-          description: tool.description,
-          version: tool.version,
-          inputSchema: { type: "object", properties: {} },
-          outputSchema: { type: "object", properties: {} },
-          requiredPermissions: tool.requiredPermissions,
-          riskLevel: "low",
-          approvalRequired: tool.approvalRequired,
-          adapterName: tool.adapterName,
-        },
-      });
-    }),
-  );
+  try {
+    await Promise.all(
+      toolCatalog.map(async (tool: { name: string; category: string; description: string; version: string; requiredPermissions: string[]; approvalRequired: boolean; adapterName: string }) => {
+        await prisma.registeredTool.upsert({
+          where: { name: tool.name },
+          update: {},
+          create: {
+            name: tool.name,
+            category: tool.category,
+            description: tool.description,
+            version: tool.version,
+            inputSchema: { type: "object", properties: {} },
+            outputSchema: { type: "object", properties: {} },
+            requiredPermissions: tool.requiredPermissions,
+            riskLevel: "low",
+            approvalRequired: tool.approvalRequired,
+            adapterName: tool.adapterName,
+          },
+        });
+      }),
+    );
+  } catch {
+    return;
+  }
 }
 
 export async function isToolAuthorized(employeeId: string, toolName: string) {

@@ -1,5 +1,7 @@
 import { listEmployees } from "@/lib/agent-factory";
 
+export const dynamic = "force-dynamic";
+
 export default async function EmployeesPage() {
   const employees = await listEmployees();
 

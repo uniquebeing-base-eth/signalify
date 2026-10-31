@@ -1,5 +1,7 @@
 import AgentFactoryForm from "@/components/agent-factory-form";
 
+export const dynamic = "force-dynamic";
+
 export default function AgentFactoryPage() {
   return (
     <div className="page-header">
