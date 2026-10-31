@@ -1,0 +1,338 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id                 String            @id @default(cuid())
+  email              String            @unique
+  name               String
+  role               String            @default("admin")
+  createdAt          DateTime          @default(now())
+  workspaces         WorkspaceMember[]
+  authoredTasks      Task[]            @relation("TaskAuthor")
+  auditLogs          AuditLog[]        @relation("AuditActor")
+}
+
+model Workspace {
+  id                String             @id @default(cuid())
+  name              String
+  slug              String             @unique
+  ownerId           String
+  createdAt         DateTime           @default(now())
+  members           WorkspaceMember[]
+  employees         AIEmployee[]
+  tasks             Task[]
+  memoryEntries     EmployeeMemory[]
+  integrations     Integration[]
+  providers         ModelProvider[]
+  knowledgeSources  KnowledgeSource[]
+}
+
+model WorkspaceMember {
+  id          String    @id @default(cuid())
+  workspaceId String
+  userId     String
+  role       String    @default("member")
+  joinedAt   DateTime  @default(now())
+  workspace  Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+}
+
+model Profession {
+  id                    String   @id @default(cuid())
+  name                  String   @unique
+  description           String
+  version               String   @default("1.0.0")
+  responsibilities      Json
+  specializations       Json
+  requiredCompetencies  Json
+  recommendedTools      Json
+  defaultInstructions   String
+  trainingCurriculumRef String?
+  createdAt             DateTime @default(now())
+}
+
+model ModelProvider {
+  id          String          @id @default(cuid())
+  name        String          @unique
+  kind        String          @default("antseed")
+  baseUrl     String?
+  apiKeyRef   String?
+  isEnabled   Boolean         @default(true)
+  workspaceId String?
+  workspace   Workspace?      @relation(fields: [workspaceId], references: [id])
+  models      AvailableModel[]
+  configs     ProviderConfiguration[]
+  healthChecks ModelHealthCheck[]
+}
+
+model ProviderConfiguration {
+  id             String        @id @default(cuid())
+  providerId     String
+  key            String
+  value          String
+  createdAt      DateTime      @default(now())
+  provider       ModelProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+}
+
+model AvailableModel {
+  id                 String         @id @default(cuid())
+  providerId         String
+  modelId           String
+  name              String
+  modelType         String?
+  providerAvailability String?
+  contextLength     Int?
+  maxOutputTokens   Int?
+  supportedProtocols Json?
+  capabilities      Json?
+  pricing           Json?
+  isDefault         Boolean        @default(false)
+  fetchedAt         DateTime       @default(now())
+  provider          ModelProvider  @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, modelId])
+}
+
+model AIEmployee {
+  id                String             @id @default(cuid())
+  workspaceId        String
+  name              String
+  title             String
+  employeeId        String             @unique
+  profession        String
+  specialization    String?
+  description       String?
+  avatar            String?
+  status            String             @default("active")
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  workspace         Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  identity          EmployeeIdentity?
+  model             EmployeeModel?
+  instructions      EmployeeInstruction?
+  memoryEntries     EmployeeMemory[]
+  tasks             Task[]
+  toolPermissions   EmployeeToolPermission[]
+  auditLogs         AuditLog[]
+}
+
+model EmployeeIdentity {
+  id                  String     @id @default(cuid())
+  employeeId          String     @unique
+  internalEmployeeId  String     @unique
+  emailIdentity       String?
+  professionalTitle  String?
+  status              String     @default("active")
+  createdAt           DateTime   @default(now())
+  employee            AIEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+model EmployeeInstruction {
+  id             String     @id @default(cuid())
+  employeeId     String     @unique
+  role           String
+  responsibilities Json
+  outputExpectations Json
+  procedures     Json
+  communicationStyle String
+  boundaries     Json
+  limitations    Json
+  escalation     Json
+  qualityExpectations Json
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  employee       AIEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+model EmployeeModel {
+  id           String     @id @default(cuid())
+  employeeId   String     @unique
+  provider     String
+  modelId      String
+  modelName    String
+  isDefault    Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  employee     AIEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+model EmployeeMemory {
+  id            String     @id @default(cuid())
+  employeeId    String
+  workspaceId   String
+  category      String
+  title         String?
+  content       String
+  metadata      Json?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  employee      AIEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  workspace     Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model KnowledgeSource {
+  id            String     @id @default(cuid())
+  workspaceId   String
+  name          String
+  kind          String
+  sourceUrl     String?
+  ownerId       String?
+  permissions   Json?
+  createdAt     DateTime   @default(now())
+  workspace     Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model RegisteredTool {
+  id             String                  @id @default(cuid())
+  name           String                  @unique
+  category       String
+  description    String
+  version        String
+  inputSchema    Json
+  outputSchema   Json
+  requiredPermissions Json
+  riskLevel      String
+  approvalRequired Boolean               @default(false)
+  available      Boolean                @default(true)
+  adapterName    String
+  createdAt      DateTime               @default(now())
+  permissions    EmployeeToolPermission[]
+}
+
+model EmployeeToolPermission {
+  id            String         @id @default(cuid())
+  employeeId    String
+  toolId        String
+  allowed       Boolean        @default(true)
+  grantedAt     DateTime       @default(now())
+  employee      AIEmployee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  tool          RegisteredTool @relation(fields: [toolId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, toolId])
+}
+
+model IntegrationProvider {
+  id             String       @id @default(cuid())
+  name           String       @unique
+  displayName    String
+  authUrl        String?
+  tokenUrl       String?
+  scopes         Json?
+  isEnabled      Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  integrations   Integration[]
+}
+
+model Integration {
+  id              String             @id @default(cuid())
+  workspaceId     String
+  providerId      String
+  accountName     String
+  connected       Boolean            @default(false)
+  status          String            @default("disconnected")
+  metadata        Json?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  workspace       Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  provider        IntegrationProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  oauthAuthorizations OAuthAuthorization[]
+}
+
+model OAuthAuthorization {
+  id           String    @id @default(cuid())
+  integrationId String
+  state        String
+  codeVerifier String?
+  accessToken  String?
+  refreshToken String?
+  scope        String?
+  expiresAt    DateTime?
+  createdAt    DateTime  @default(now())
+  integration  Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+}
+
+model Task {
+  id                String      @id @default(cuid())
+  workspaceId       String
+  employeeId        String?
+  createdByUserId   String?
+  title             String
+  description       String
+  priority          String      @default("normal")
+  deadline          DateTime?
+  status            String      @default("pending")
+  approvalRequired  Boolean     @default(false)
+  finalResult       String?
+  failureInfo       String?
+  createdAt        DateTime    @default(now())
+  completedAt       DateTime?
+  workspace         Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  employee          AIEmployee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  author            User?       @relation("TaskAuthor", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  steps            TaskStep[]
+  usages           ModelUsage[]
+}
+
+model TaskStep {
+  id         String   @id @default(cuid())
+  taskId     String
+  stepNumber Int
+  status     String   @default("queued")
+  details    String?
+  createdAt  DateTime @default(now())
+  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
+
+model ModelUsage {
+  id               String   @id @default(cuid())
+  taskId           String?
+  employeeId       String?
+  provider         String
+  model            String
+  inputTokens      Int?
+  outputTokens     Int?
+  cachedTokens     Int?
+  cost             Float?
+  durationMs       Int?
+  success          Boolean  @default(true)
+  requestId        String?
+  createdAt        DateTime @default(now())
+  task             Task?     @relation(fields: [taskId], references: [id], onDelete: SetNull)
+}
+
+model ModelHealthCheck {
+  id          String        @id @default(cuid())
+  providerId  String
+  status      String
+  detail      String?
+  checkedAt   DateTime      @default(now())
+  provider    ModelProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id          String     @id @default(cuid())
+  employeeId  String?
+  actorUserId String?
+  eventType   String
+  message     String
+  metadata    Json?
+  createdAt   DateTime   @default(now())
+  employee    AIEmployee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  actor       User?      @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+}
+
+model EmployeePerformance {
+  id         String   @id @default(cuid())
+  employeeId String
+  score      Float
+  metric     String
+  notes      String?
+  createdAt  DateTime @default(now())
+}
