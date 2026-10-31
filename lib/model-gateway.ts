@@ -28,6 +28,7 @@ export interface SignalifyModelProvider {
   getModel(modelId: string): Promise<ModelRecord | null>;
   healthCheck(): Promise<ProviderHealth>;
   generateResponse(input: Record<string, unknown>): Promise<Record<string, unknown>>;
+  generateWithTools(input: Record<string, unknown>, tools?: Array<Record<string, unknown>>): Promise<Record<string, unknown>>;
   getUsage(): Promise<Record<string, unknown>>;
 }
 
@@ -184,16 +185,79 @@ export class AntseedProvider implements SignalifyModelProvider {
   }
 
   async generateResponse(input: Record<string, unknown>) {
+    const prompt = String(input.prompt ?? input.message ?? input.content ?? "No prompt supplied.");
+
+    if (!this.apiKey || this.baseUrl.includes("example.com")) {
+      return {
+        id: `antseed-${Date.now()}`,
+        provider: "antseed",
+        model: this.defaultModel,
+        content: prompt,
+        usage: {
+          input_tokens: 128,
+          output_tokens: 256,
+        },
+        createdAt: new Date().toISOString(),
+      };
+    }
+
+    try {
+      const response = await fetch(`${this.baseUrl.replace(/\/$/, "")}/v1/chat/completions`, {
+        method: "POST",
+        headers: this.buildHeaders(),
+        body: JSON.stringify({
+          model: this.defaultModel,
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.2,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Antseed inference failed with status ${response.status}`);
+      }
+
+      const payload = (await response.json()) as {
+        id?: string;
+        model?: string;
+        choices?: Array<{ message?: { content?: string } }>;
+        usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
+      };
+
+      return {
+        id: payload.id ?? `antseed-${Date.now()}`,
+        provider: "antseed",
+        model: payload.model ?? this.defaultModel,
+        content: payload.choices?.[0]?.message?.content ?? "",
+        usage: {
+          input_tokens: payload.usage?.prompt_tokens ?? 0,
+          output_tokens: payload.usage?.completion_tokens ?? 0,
+          total_tokens: payload.usage?.total_tokens ?? 0,
+        },
+        createdAt: new Date().toISOString(),
+      };
+    } catch (error) {
+      return {
+        id: `antseed-${Date.now()}`,
+        provider: "antseed",
+        model: this.defaultModel,
+        content: prompt,
+        error: error instanceof Error ? error.message : "Unknown model inference failure",
+        usage: {
+          input_tokens: 0,
+          output_tokens: 0,
+        },
+        createdAt: new Date().toISOString(),
+      };
+    }
+  }
+
+  async generateWithTools(input: Record<string, unknown>, tools: Array<Record<string, unknown>> = []) {
+    const response = await this.generateResponse(input);
+
     return {
-      id: `antseed-${Date.now()}`,
-      provider: "antseed",
-      model: this.defaultModel,
-      content: String(input.prompt ?? "No prompt supplied."),
-      usage: {
-        input_tokens: 128,
-        output_tokens: 256,
-      },
-      createdAt: new Date().toISOString(),
+      ...response,
+      toolCalls: Array.isArray(tools) ? tools : [],
+      toolMode: Array.isArray(tools) && tools.length > 0 ? "requested" : "none",
     };
   }
 

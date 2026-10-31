@@ -75,7 +75,7 @@ export async function registeredTools() {
 
 export async function ensureToolRegistry() {
   await Promise.all(
-    toolCatalog.map(async (tool: any) => {
+    toolCatalog.map(async (tool: { name: string; category: string; description: string; version: string; requiredPermissions: string[]; approvalRequired: boolean; adapterName: string }) => {
       await prisma.registeredTool.upsert({
         where: { name: tool.name },
         update: {},

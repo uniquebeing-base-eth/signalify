@@ -77,13 +77,13 @@ export async function listProfessions() {
   });
 
   return records.length > 0
-    ? records.map((item: { id: string; name: string; description: string; responsibilities: string[]; specializations: string[]; recommendedTools: string[]; defaultInstructions: string }) => ({
+    ? records.map((item) => ({
         id: item.id,
         name: item.name,
         description: item.description,
-        responsibilities: Array.isArray(item.responsibilities) ? item.responsibilities : [],
-        specializations: Array.isArray(item.specializations) ? item.specializations : [],
-        recommendedTools: Array.isArray(item.recommendedTools) ? item.recommendedTools : [],
+        responsibilities: Array.isArray(item.responsibilities) ? item.responsibilities.map(String) : [],
+        specializations: Array.isArray(item.specializations) ? item.specializations.map(String) : [],
+        recommendedTools: Array.isArray(item.recommendedTools) ? item.recommendedTools.map(String) : [],
         defaultInstructions: item.defaultInstructions,
       }))
     : professionTemplates;

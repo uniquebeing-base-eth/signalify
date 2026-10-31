@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
+import { createTask } from "@/lib/tasks";
 
 export async function GET() {
   const tasks = await prisma.task.findMany({
@@ -31,17 +32,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
   }
 
-  const task = await prisma.task.create({
-    data: {
-      workspaceId: workspace.id,
-      employeeId: body.employeeId ?? null,
-      createdByUserId: (await prisma.user.findFirst({ where: { email: "admin@signalify.ai" } }))?.id ?? null,
-      title: body.title ?? "New task",
-      description: body.description ?? "Task created from Signalify workspace",
-      priority: body.priority ?? "normal",
-      status: body.status ?? "queued",
-      approvalRequired: Boolean(body.approvalRequired),
-    },
+  const task = await createTask({
+    workspaceId: workspace.id,
+    employeeId: body.employeeId ?? null,
+    createdByUserId: (await prisma.user.findFirst({ where: { email: "admin@signalify.ai" } }))?.id ?? null,
+    title: body.title ?? "New task",
+    description: body.description ?? "Task created from Signalify workspace",
+    priority: body.priority ?? "normal",
+    status: body.status ?? "queued",
+    approvalRequired: Boolean(body.approvalRequired),
   });
 
   return NextResponse.json({ success: true, task });
