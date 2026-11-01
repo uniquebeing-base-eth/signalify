@@ -3,7 +3,7 @@ import { getEmployeeMemory } from "@/lib/memory";
 import { AntseedProvider } from "@/lib/model-gateway";
 import { prisma } from "@/lib/prisma";
 import { isToolAuthorized } from "@/lib/tools";
-import { recordTaskUsage, updateTaskStatus } from "@/lib/tasks";
+import { createTaskStep, recordTaskUsage, updateTaskStatus } from "@/lib/tasks";
 
 export async function executeEmployeeTask(taskId: string) {
   const task = await prisma.task.findUnique({
@@ -29,16 +29,14 @@ export async function executeEmployeeTask(taskId: string) {
 
   const provider = new AntseedProvider();
   const startedAt = Date.now();
-  const response = await provider.generateResponse({
-    prompt: task.description,
-    context: memory.map((entry: { content: string }) => entry.content).slice(0, 6),
-  });
-  const durationMs = Date.now() - startedAt;
+
+  await createTaskStep(task.id, 1, "running", `Dispatching task to ${employee?.name ?? "employee"}`);
 
   const toolName = "web-research";
   const toolPermission = employee ? await isToolAuthorized(employee.id, toolName) : false;
 
   if (!toolPermission && task.description.toLowerCase().includes("research")) {
+    await createTaskStep(task.id, 2, "failed", "Research tool permission denied");
     await updateTaskStatus(task.id, "failed", undefined, "Research tool permission denied");
     return {
       taskId: task.id,
@@ -47,7 +45,15 @@ export async function executeEmployeeTask(taskId: string) {
     };
   }
 
-  await updateTaskStatus(task.id, "completed", String(response.content ?? "Task completed"));
+  const response = await provider.generateResponse({
+    prompt: task.description,
+    context: memory.map((entry: { content: string }) => entry.content).slice(0, 6),
+  });
+  const durationMs = Date.now() - startedAt;
+
+  const resultText = String(response.content ?? "Task completed");
+  await createTaskStep(task.id, 2, "completed", `Generated response for task: ${task.title}`);
+  await updateTaskStatus(task.id, "completed", resultText);
 
   await recordTaskUsage({
     taskId: task.id,
@@ -65,6 +71,6 @@ export async function executeEmployeeTask(taskId: string) {
   return {
     taskId: task.id,
     status: "completed",
-    content: response.content,
+    content: resultText,
   };
 }

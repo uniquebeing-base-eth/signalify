@@ -4,6 +4,7 @@ import { createEmployee, ensureDefaultWorkspace, ensureSeedUser } from "@/lib/ag
 import { executeEmployeeTask } from "@/lib/agent-runtime";
 import { AntseedProvider, fallbackModelCatalogue } from "@/lib/model-gateway";
 import { createOAuthState, validateOAuthState } from "@/lib/oauth";
+import { prisma } from "@/lib/prisma";
 import { createTask } from "@/lib/tasks";
 
 describe("Signalify foundation", () => {
@@ -87,5 +88,43 @@ describe("Signalify foundation", () => {
     expect(task.instructions).toContain("proposal");
     expect(task.referenceUrls).toEqual(["https://example.com/profile"]);
     expect(task.expectedDeliverables).toEqual(["proposal.md", "email-draft.md"]);
+  });
+
+  it("records a visible execution step when a task runs", async () => {
+    const workspace = await ensureDefaultWorkspace();
+    const user = await ensureSeedUser();
+    const employee = await createEmployee({
+      name: "Process Tracker",
+      title: "Operations Analyst",
+      profession: "Document Organizer",
+      specialization: "File operations",
+      description: "Tracks task runs and organizes file workflows",
+      avatar: "📁",
+      modelId: "z-ai/glm-5.3-flash",
+      modelName: "z-ai/glm-5.3-flash",
+      instructions: "Keep notes concise.",
+      workspaceId: workspace.id,
+      toolIds: [],
+    });
+
+    const task = await createTask({
+      workspaceId: workspace.id,
+      employeeId: employee.id,
+      createdByUserId: user.id,
+      title: "Organize CSV and PDF set",
+      description: "Review the provided PDF and CSV files and produce a clean, organized summary.",
+      priority: "normal",
+      status: "queued",
+    });
+
+    await executeEmployeeTask(task.id);
+
+    const persistedTask = await prisma.task.findUnique({
+      where: { id: task.id },
+      include: { steps: true },
+    });
+
+    expect(persistedTask?.status).toBe("completed");
+    expect(persistedTask?.steps.some((step) => step.status === "running" || step.status === "completed")).toBe(true);
   });
 });

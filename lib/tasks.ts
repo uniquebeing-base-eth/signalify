@@ -91,6 +91,17 @@ export async function recordTaskUsage({
   });
 }
 
+export async function createTaskStep(taskId: string, stepNumber: number, status: string, details?: string) {
+  return prisma.taskStep.create({
+    data: {
+      taskId,
+      stepNumber,
+      status,
+      details: details ?? null,
+    },
+  });
+}
+
 export async function updateTaskStatus(taskId: string, status: string, finalResult?: string, failureInfo?: string) {
   return prisma.task.update({
     where: { id: taskId },

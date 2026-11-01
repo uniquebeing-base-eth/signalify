@@ -1,43 +1,7 @@
-"use client";
+import { listEmployees } from "@/lib/agent-factory";
 
-import { useState } from "react";
-
-export default function NewTaskPage() {
-  const [status, setStatus] = useState<string>("");
-
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-
-    const payload = {
-      title: String(form.get("title") ?? ""),
-      description: String(form.get("description") ?? ""),
-      category: String(form.get("category") ?? "general"),
-      instructions: String(form.get("instructions") ?? ""),
-      priority: String(form.get("priority") ?? "normal"),
-      status: String(form.get("status") ?? "pending"),
-      employeeId: form.get("employeeId") ? String(form.get("employeeId")) : null,
-      referenceUrls: String(form.get("referenceUrls") ?? "")
-        .split(/\n|,/) 
-        .map((value) => value.trim())
-        .filter(Boolean),
-      expectedDeliverables: String(form.get("expectedDeliverables") ?? "")
-        .split(/\n|,/) 
-        .map((value) => value.trim())
-        .filter(Boolean),
-    };
-
-    setStatus("Creating assignment...");
-
-    const response = await fetch("/api/tasks", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    const data = await response.json();
-    setStatus(data.success ? `Assignment created: ${data.task.title}` : `Failed: ${data.error ?? "unknown error"}`);
-  }
+export default async function NewTaskPage() {
+  const employees = await listEmployees();
 
   return (
     <div className="page-header">
@@ -48,15 +12,26 @@ export default function NewTaskPage() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="panel wide-panel" style={{ display: "grid", gap: 16 }}>
+      <form action="/api/tasks" method="post" className="panel wide-panel" style={{ display: "grid", gap: 16 }}>
         <div className="form-grid">
           <label className="field">
             <span>Assignment title</span>
-            <input name="title" defaultValue="Partnership proposal" required />
+            <input name="title" defaultValue="Organize PDF and CSV workflow" required />
           </label>
+
+          <label className="field">
+            <span>Assigned employee</span>
+            <select name="employeeId" defaultValue="">
+              <option value="">Unassigned</option>
+              {employees.map((employee: any) => (
+                <option key={employee.id} value={employee.id}>{employee.name} — {employee.profession}</option>
+              ))}
+            </select>
+          </label>
+
           <label className="field">
             <span>Category</span>
-            <select name="category" defaultValue="research">
+            <select name="category" defaultValue="document">
               <option value="research">Research</option>
               <option value="document">Document creation</option>
               <option value="analysis">Data analysis</option>
@@ -64,49 +39,40 @@ export default function NewTaskPage() {
               <option value="general">General operations</option>
             </select>
           </label>
+
           <label className="field">
             <span>Priority</span>
-            <select name="priority" defaultValue="high">
+            <select name="priority" defaultValue="normal">
               <option value="low">Low</option>
               <option value="normal">Normal</option>
               <option value="high">High</option>
-            </select>
-          </label>
-          <label className="field">
-            <span>Status</span>
-            <select name="status" defaultValue="pending">
-              <option value="draft">Draft</option>
-              <option value="pending">Pending</option>
-              <option value="queued">Queued</option>
             </select>
           </label>
         </div>
 
         <label className="field">
           <span>Description</span>
-          <textarea name="description" defaultValue="Review the company profile and draft a concise proposal for the partnership." required />
+          <textarea name="description" defaultValue="Organize the attached PDF and CSV files into a clean summary, identify duplicates, and produce a concise final file structure for follow-up." required />
         </label>
 
         <label className="field">
           <span>Instructions</span>
-          <textarea name="instructions" defaultValue="Read the reference material, extract the key business context, and produce a concise proposal draft with clear recommendations." />
+          <textarea name="instructions" defaultValue="Review the files, standardize naming, flag issues, and produce a simple workflow summary with clear deliverables." />
         </label>
 
         <label className="field">
-          <span>Reference URLs</span>
-          <textarea name="referenceUrls" defaultValue="https://example.com/company-profile" />
+          <span>Relevant files / references</span>
+          <textarea name="referenceUrls" defaultValue="invoice.pdf, transactions.csv, folder-structure-summary.md" />
         </label>
 
         <label className="field">
           <span>Expected deliverables</span>
-          <textarea name="expectedDeliverables" defaultValue="proposal.md, email-draft.md" />
+          <textarea name="expectedDeliverables" defaultValue="cleaned-file-list.md, organized-folder-plan.md" />
         </label>
 
         <div className="form-actions">
           <button type="submit" className="secondary-button">Create assignment</button>
         </div>
-
-        {status && <p className="status-pill">{status}</p>}
       </form>
     </div>
   );
