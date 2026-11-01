@@ -5,6 +5,7 @@ import { executeEmployeeTask } from "@/lib/agent-runtime";
 import { AntseedProvider, fallbackModelCatalogue } from "@/lib/model-gateway";
 import { createOAuthState, validateOAuthState } from "@/lib/oauth";
 import { prisma } from "@/lib/prisma";
+import { sendEmployeeChatMessage } from "@/lib/employee-workspace";
 import { approveTask, createTask } from "@/lib/tasks";
 
 describe("Signalify foundation", () => {
@@ -162,5 +163,35 @@ describe("Signalify foundation", () => {
     const approved = await approveTask(task.id, "Approved after verification");
     expect(approved.status).toBe("completed");
     expect(approved.finalResult).toContain("Approved after verification");
+  });
+
+  it("creates a dedicated employee conversation and executes a direct instruction", async () => {
+    const workspace = await ensureDefaultWorkspace();
+    const user = await ensureSeedUser();
+    const employee = await createEmployee({
+      name: "Inbox Manager",
+      title: "Email Operations Assistant",
+      profession: "Email Operations",
+      specialization: "Inbox triage",
+      description: "Prioritizes important email and drafts responses.",
+      avatar: "📧",
+      modelId: "z-ai/glm-5.3-flash",
+      modelName: "z-ai/glm-5.3-flash",
+      instructions: "Handle inbox triage with concise prioritization.",
+      workspaceId: workspace.id,
+      toolIds: [],
+    });
+
+    const result = await sendEmployeeChatMessage({
+      employeeId: employee.id,
+      content: "Please review this inbox summary and prepare a concise triage report.",
+      sender: "company",
+      userId: user.id,
+    });
+
+    expect(result.conversation).toBeTruthy();
+    expect(result.task).toBeTruthy();
+    expect(result.messages.some((message) => message.sender === "company")).toBe(true);
+    expect(result.messages.some((message) => message.sender === "employee")).toBe(true);
   });
 });

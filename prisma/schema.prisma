@@ -118,6 +118,8 @@ model AIEmployee {
   model             EmployeeModel?
   instructions      EmployeeInstruction?
   memoryEntries     EmployeeMemory[]
+  conversations     EmployeeConversation[]
+  messages          EmployeeConversationMessage[]
   tasks             Task[]
   toolPermissions   EmployeeToolPermission[]
   auditLogs         AuditLog[]
@@ -175,6 +177,29 @@ model EmployeeMemory {
   updatedAt     DateTime   @updatedAt
   employee      AIEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   workspace     Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model EmployeeConversation {
+  id          String                     @id @default(cuid())
+  employeeId  String
+  title       String?
+  status      String                     @default("active")
+  createdAt   DateTime                   @default(now())
+  updatedAt   DateTime                   @updatedAt
+  employee    AIEmployee                 @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  messages    EmployeeConversationMessage[]
+}
+
+model EmployeeConversationMessage {
+  id            String                @id @default(cuid())
+  conversationId String
+  employeeId    String
+  sender        String                @default("company")
+  content       String
+  metadata      Json?
+  createdAt     DateTime              @default(now())
+  conversation  EmployeeConversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  employee      AIEmployee            @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 }
 
 model KnowledgeSource {

@@ -28,7 +28,7 @@ export default async function EmployeesPage() {
           <tbody>
             {employees.map((employee: any) => (
               <tr key={employee.id}>
-                <td>{employee.name}</td>
+                <td><a href={`/employees/${employee.id}`}>{employee.name}</a></td>
                 <td>{employee.profession}</td>
                 <td>{employee.employeeId}</td>
                 <td>{employee.modelName}</td>
