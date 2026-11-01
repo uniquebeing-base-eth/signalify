@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { TaskExecutionButton } from "@/components/task-execution-button";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,7 @@ export default async function TasksPage() {
               <th>Employee</th>
               <th>Status</th>
               <th>Priority</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody>
@@ -34,6 +36,13 @@ export default async function TasksPage() {
                 <td>{task.employee?.name ?? "Unassigned"}</td>
                 <td><span className="status-pill">{task.status}</span></td>
                 <td>{task.priority}</td>
+                <td>
+                  {task.employee ? (
+                    <TaskExecutionButton taskId={task.id} taskTitle={task.title} />
+                  ) : (
+                    <span>Assign employee</span>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
