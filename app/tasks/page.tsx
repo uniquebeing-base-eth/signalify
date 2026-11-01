@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { prisma } from "@/lib/prisma";
 import { TaskExecutionButton } from "@/components/task-execution-button";
 
@@ -16,6 +18,9 @@ export default async function TasksPage() {
           <p className="eyebrow">Execution layer</p>
           <h1>Tasks & Work</h1>
         </div>
+        <Link href="/tasks/new" className="primary-button">
+          New assignment
+        </Link>
       </div>
 
       <div className="panel wide-panel">
@@ -23,6 +28,7 @@ export default async function TasksPage() {
           <thead>
             <tr>
               <th>Task</th>
+              <th>Category</th>
               <th>Employee</th>
               <th>Status</th>
               <th>Priority</th>
@@ -33,6 +39,7 @@ export default async function TasksPage() {
             {tasks.map((task: any) => (
               <tr key={task.id}>
                 <td>{task.title}</td>
+                <td>{task.category ?? "general"}</td>
                 <td>{task.employee?.name ?? "Unassigned"}</td>
                 <td><span className="status-pill">{task.status}</span></td>
                 <td>{task.priority}</td>

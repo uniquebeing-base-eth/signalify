@@ -1,3 +1,5 @@
+import { Prisma } from "@prisma/client";
+
 import { prisma } from "@/lib/prisma";
 
 export type TaskDraft = {
@@ -6,6 +8,12 @@ export type TaskDraft = {
   createdByUserId?: string | null;
   title: string;
   description: string;
+  category?: string;
+  instructions?: string | null;
+  referenceUrls?: string[];
+  expectedDeliverables?: string[];
+  deliverables?: string[];
+  metadata?: Record<string, unknown>;
   priority?: string;
   deadline?: Date | string | null;
   status?: string;
@@ -19,6 +27,8 @@ export async function createTask(input: TaskDraft) {
     throw new Error("Workspace not found");
   }
 
+  const expectedDeliverables = input.expectedDeliverables ?? input.deliverables ?? [];
+
   return prisma.task.create({
     data: {
       workspaceId: input.workspaceId,
@@ -26,6 +36,11 @@ export async function createTask(input: TaskDraft) {
       createdByUserId: input.createdByUserId ?? null,
       title: input.title,
       description: input.description,
+      category: input.category ?? "general",
+      instructions: input.instructions ?? null,
+      referenceUrls: (input.referenceUrls ?? []) as Prisma.InputJsonValue,
+      expectedDeliverables: expectedDeliverables as Prisma.InputJsonValue,
+      metadata: (input.metadata ?? {}) as Prisma.InputJsonValue,
       priority: input.priority ?? "normal",
       deadline: input.deadline ? new Date(input.deadline) : null,
       status: input.status ?? "queued",

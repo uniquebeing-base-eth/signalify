@@ -259,25 +259,30 @@ model OAuthAuthorization {
 }
 
 model Task {
-  id                String      @id @default(cuid())
-  workspaceId       String
-  employeeId        String?
-  createdByUserId   String?
-  title             String
-  description       String
-  priority          String      @default("normal")
-  deadline          DateTime?
-  status            String      @default("pending")
-  approvalRequired  Boolean     @default(false)
-  finalResult       String?
-  failureInfo       String?
-  createdAt        DateTime    @default(now())
-  completedAt       DateTime?
-  workspace         Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  employee          AIEmployee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
-  author            User?       @relation("TaskAuthor", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  steps            TaskStep[]
-  usages           ModelUsage[]
+  id                    String      @id @default(cuid())
+  workspaceId           String
+  employeeId            String?
+  createdByUserId       String?
+  title                 String
+  description           String
+  category              String?     @default("general")
+  instructions          String?
+  referenceUrls         Json?
+  expectedDeliverables  Json?
+  metadata              Json?
+  priority              String      @default("normal")
+  deadline              DateTime?
+  status                String      @default("pending")
+  approvalRequired      Boolean     @default(false)
+  finalResult           String?
+  failureInfo           String?
+  createdAt            DateTime    @default(now())
+  completedAt           DateTime?
+  workspace             Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  employee              AIEmployee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  author                User?       @relation("TaskAuthor", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  steps                TaskStep[]
+  usages               ModelUsage[]
 }
 
 model TaskStep {

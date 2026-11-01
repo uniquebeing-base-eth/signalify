@@ -38,7 +38,16 @@ export async function POST(request: Request) {
     createdByUserId: (await prisma.user.findFirst({ where: { email: "admin@signalify.ai" } }))?.id ?? null,
     title: body.title ?? "New task",
     description: body.description ?? "Task created from Signalify workspace",
+    category: body.category ?? "general",
+    instructions: body.instructions ?? null,
+    referenceUrls: Array.isArray(body.referenceUrls) ? body.referenceUrls : [],
+    expectedDeliverables: Array.isArray(body.expectedDeliverables) ? body.expectedDeliverables : (Array.isArray(body.deliverables) ? body.deliverables : []),
+    metadata: {
+      source: "assignment-form",
+      ...(body.metadata ?? {}),
+    },
     priority: body.priority ?? "normal",
+    deadline: body.deadline ?? null,
     status: body.status ?? "queued",
     approvalRequired: Boolean(body.approvalRequired),
   });

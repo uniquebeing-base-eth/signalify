@@ -65,4 +65,27 @@ describe("Signalify foundation", () => {
     expect(result.status).toBe("completed");
     expect(result.content).toBeTruthy();
   });
+
+  it("creates assignment-style tasks with richer metadata", async () => {
+    const workspace = await ensureDefaultWorkspace();
+    const user = await ensureSeedUser();
+
+    const task = await createTask({
+      workspaceId: workspace.id,
+      createdByUserId: user.id,
+      title: "Partnership proposal",
+      description: "Review company profile and draft a proposal.",
+      instructions: "Review the attachment and draft the proposal in a concise executive style.",
+      category: "research",
+      referenceUrls: ["https://example.com/profile"],
+      deliverables: ["proposal.md", "email-draft.md"],
+      priority: "high",
+      status: "pending",
+    });
+
+    expect(task.category).toBe("research");
+    expect(task.instructions).toContain("proposal");
+    expect(task.referenceUrls).toEqual(["https://example.com/profile"]);
+    expect(task.expectedDeliverables).toEqual(["proposal.md", "email-draft.md"]);
+  });
 });
