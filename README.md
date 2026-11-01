@@ -34,3 +34,23 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Production-safe configuration
+
+For a hosted deployment, do not point Antseed to `127.0.0.1` or `localhost`. Those addresses are machine-local and will not work from Vercel or any other machine.
+
+Use a reachable Antseed base URL instead:
+
+```env
+ANTSEED_BASE_URL="https://your-antseed-host.example.com"
+ANTSEED_API_KEY="your-antseed-api-key"
+ANTSEED_DEFAULT_MODEL="antseed-gpt-4.1-mini"
+```
+
+Also, do not deploy this app with the default SQLite file database from local development. Vercel serverless environments should use a remote Postgres database:
+
+```env
+DATABASE_URL="postgresql://user:password@host:5432/dbname?sslmode=require"
+```
+
+Use the same pattern in Vercel project settings under Environment Variables.
