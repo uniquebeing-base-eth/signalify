@@ -113,3 +113,27 @@ export async function updateTaskStatus(taskId: string, status: string, finalResu
     },
   });
 }
+
+export async function approveTask(taskId: string, note?: string) {
+  const task = await prisma.task.findUnique({ where: { id: taskId } });
+
+  if (!task) {
+    throw new Error("Task not found");
+  }
+
+  const approvalNote = note?.trim() || "Approved after review";
+
+  return prisma.task.update({
+    where: { id: taskId },
+    data: {
+      status: "completed",
+      finalResult: task.finalResult ? `${task.finalResult}\n\nApproval: ${approvalNote}` : approvalNote,
+      completedAt: new Date(),
+      metadata: {
+        ...(task.metadata as Record<string, unknown> | null | undefined),
+        approvalNote,
+        approvedAt: new Date().toISOString(),
+      },
+    },
+  });
+}

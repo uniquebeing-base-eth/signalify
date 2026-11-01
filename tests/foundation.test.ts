@@ -5,7 +5,7 @@ import { executeEmployeeTask } from "@/lib/agent-runtime";
 import { AntseedProvider, fallbackModelCatalogue } from "@/lib/model-gateway";
 import { createOAuthState, validateOAuthState } from "@/lib/oauth";
 import { prisma } from "@/lib/prisma";
-import { createTask } from "@/lib/tasks";
+import { approveTask, createTask } from "@/lib/tasks";
 
 describe("Signalify foundation", () => {
   it("keeps the Antseed fallback model catalog available without runtime secrets", async () => {
@@ -126,5 +126,41 @@ describe("Signalify foundation", () => {
 
     expect(persistedTask?.status).toBe("completed");
     expect(persistedTask?.steps.some((step) => step.status === "running" || step.status === "completed")).toBe(true);
+  });
+
+  it("holds approval-required tasks for human review before final completion", async () => {
+    const workspace = await ensureDefaultWorkspace();
+    const user = await ensureSeedUser();
+    const employee = await createEmployee({
+      name: "Approver",
+      title: "Operations Lead",
+      profession: "Document Manager",
+      specialization: "Approval workflows",
+      description: "Reviews work before final delivery",
+      avatar: "✅",
+      modelId: "z-ai/glm-5.3-flash",
+      modelName: "z-ai/glm-5.3-flash",
+      instructions: "Prepare concise outputs for review.",
+      workspaceId: workspace.id,
+      toolIds: [],
+    });
+
+    const task = await createTask({
+      workspaceId: workspace.id,
+      employeeId: employee.id,
+      createdByUserId: user.id,
+      title: "Review customer files",
+      description: "Organize and summarize the latest customer file exports.",
+      priority: "high",
+      status: "queued",
+      approvalRequired: true,
+    });
+
+    const result = await executeEmployeeTask(task.id);
+    expect(result.status).toBe("pending_approval");
+
+    const approved = await approveTask(task.id, "Approved after verification");
+    expect(approved.status).toBe("completed");
+    expect(approved.finalResult).toContain("Approved after verification");
   });
 });

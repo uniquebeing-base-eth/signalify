@@ -47,7 +47,9 @@ export default async function TasksPage() {
             {tasks.map((task: any) => (
               <tr key={task.id}>
                 <td>
-                  <strong>{task.title}</strong>
+                  <Link href={`/tasks/${task.id}`} style={{ fontWeight: 600, display: "inline-block", marginBottom: 4 }}>
+                    {task.title}
+                  </Link>
                   <div>{task.description}</div>
                 </td>
                 <td>{task.category ?? "general"}</td>

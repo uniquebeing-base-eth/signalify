@@ -52,6 +52,32 @@ export async function executeEmployeeTask(taskId: string) {
   const durationMs = Date.now() - startedAt;
 
   const resultText = String(response.content ?? "Task completed");
+
+  if (task.approvalRequired) {
+    await createTaskStep(task.id, 2, "pending_approval", `Awaiting human approval for: ${task.title}`);
+    await updateTaskStatus(task.id, "pending_approval", resultText);
+
+    await recordTaskUsage({
+      taskId: task.id,
+      employeeId: task.employeeId,
+      provider: "antseed",
+      model: model?.modelId ?? process.env.ANTSEED_DEFAULT_MODEL ?? "antseed-gpt-4.1-mini",
+      inputTokens: Number((response.usage as Record<string, unknown>)?.input_tokens ?? 0),
+      outputTokens: Number((response.usage as Record<string, unknown>)?.output_tokens ?? 0),
+      cost: 0,
+      durationMs,
+      success: !(response as { error?: string }).error,
+      requestId: (response as { id?: string }).id,
+    });
+
+    return {
+      taskId: task.id,
+      status: "pending_approval",
+      content: resultText,
+      requiresApproval: true,
+    };
+  }
+
   await createTaskStep(task.id, 2, "completed", `Generated response for task: ${task.title}`);
   await updateTaskStatus(task.id, "completed", resultText);
 
