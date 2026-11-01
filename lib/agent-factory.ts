@@ -185,7 +185,7 @@ export async function createEmployee({
       });
 
       await Promise.all(
-        availableTools.map((tool: any) =>
+        availableTools.map((tool: { id: string }) =>
           tx.employeeToolPermission.upsert({
             where: {
               employeeId_toolId: {
@@ -238,16 +238,27 @@ export async function listEmployees(workspaceId?: string) {
       orderBy: { createdAt: "desc" },
     });
 
-    return employees.map((employee: any) => ({
-    id: employee.id,
-    name: employee.name,
-    title: employee.title,
-    employeeId: employee.employeeId,
-    profession: employee.profession,
-    specialization: employee.specialization ?? "General",
-    description: employee.description ?? "Signalify AI employee",
-    status: employee.status,
-    modelName: employee.model?.modelName ?? "Not assigned",
+    return employees.map((employee: {
+      id: string;
+      name: string;
+      title: string;
+      employeeId: string;
+      profession: string;
+      specialization?: string | null;
+      description?: string | null;
+      status: string;
+      model?: { modelName?: string | null; provider?: string | null } | null;
+      identity?: { emailIdentity?: string | null } | null;
+    }) => ({
+      id: employee.id,
+      name: employee.name,
+      title: employee.title,
+      employeeId: employee.employeeId,
+      profession: employee.profession,
+      specialization: employee.specialization ?? "General",
+      description: employee.description ?? "Signalify AI employee",
+      status: employee.status,
+      modelName: employee.model?.modelName ?? "Not assigned",
       modelProvider: employee.model?.provider ?? "antseed",
       emailIdentity: employee.identity?.emailIdentity ?? "",
     }));
